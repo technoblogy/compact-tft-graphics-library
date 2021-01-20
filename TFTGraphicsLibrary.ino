@@ -1,6 +1,6 @@
-/* Compact TFT Graphics Library - see http://www.technoblogy.com/show?2LMJ
+/* Compact TFT Graphics Library v2 - see http://www.technoblogy.com/show?2LMJ
 
-   David Johnson-Davies - www.technoblogy.com - 29th December 2020
+   David Johnson-Davies - www.technoblogy.com - 20th January 2021
    ATtiny402 @ 20 MHz (internal oscillator; BOD disabled)
    
    CC BY 4.0
@@ -42,6 +42,9 @@ int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
 
 // Adafruit 1.54" 240x240 display and Adafruit 1.3" 240x240 display
 //int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
+
+// AliExpress 1.54" 240x240 display
+//int const ysize = 240, xsize = 240, yoff = 80, xoff = 0, invert = 1, rotate = 5;
 
 // Adafruit 2.0" 320x240 display
 //int const ysize = 240, xsize = 320, yoff = 0, xoff = 0, invert = 1, rotate = 6;
