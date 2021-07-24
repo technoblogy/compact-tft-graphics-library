@@ -15,7 +15,7 @@ int const dc = 7; // TFT display data/command select pin
 // Display parameters - uncomment the line for the one you want to use
 
 // Adafruit 1.44" 128x128 display
-// int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
+int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
 
 // Adafruit 0.96" 160x80 display
 //int const ysize = 80, xsize = 160, yoff = 24, xoff = 0, invert = 0, rotate = 0;
@@ -36,7 +36,7 @@ int const dc = 7; // TFT display data/command select pin
 //int const ysize = 135, xsize = 240, yoff = 52, xoff = 40, invert = 1, rotate = 0;
 
 // Adafruit 1.54" 240x240 display and Adafruit 1.3" 240x240 display
-// int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
+//int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
 
 // AliExpress 1.54" 240x240 display
 //int const ysize = 240, xsize = 240, yoff = 80, xoff = 0, invert = 1, rotate = 5;
