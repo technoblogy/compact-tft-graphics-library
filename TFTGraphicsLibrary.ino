@@ -1,7 +1,6 @@
-/* Compact TFT Graphics Library v2 - see http://www.technoblogy.com/show?2LMJ
+/* Compact TFT Graphics Library v3 - see http://www.technoblogy.com/show?2LMJ
 
-   David Johnson-Davies - www.technoblogy.com - 20th January 2021
-   ATtiny402 @ 20 MHz (internal oscillator; BOD disabled)
+   David Johnson-Davies - www.technoblogy.com - 24th July 2021
    
    CC BY 4.0
    Licensed under a Creative Commons Attribution 4.0 International license: 
@@ -10,14 +9,13 @@
 
 #include <SPI.h>
 
-// ATtiny402 pins
-int const cs = 0;
-int const dc = 1;
+int const cs = 6; // TFT display SPI chip select pin
+int const dc = 7; // TFT display data/command select pin
 
 // Display parameters - uncomment the line for the one you want to use
 
 // Adafruit 1.44" 128x128 display
-int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
+// int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
 
 // Adafruit 0.96" 160x80 display
 //int const ysize = 80, xsize = 160, yoff = 24, xoff = 0, invert = 0, rotate = 0;
@@ -37,11 +35,8 @@ int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
 // AliExpress 1.14" 240x135 display
 //int const ysize = 135, xsize = 240, yoff = 52, xoff = 40, invert = 1, rotate = 0;
 
-// Adafruit 1.3" 240x240 display and Adafruit 1.3" 240x240 display
-//int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
-
 // Adafruit 1.54" 240x240 display and Adafruit 1.3" 240x240 display
-//int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
+// int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
 
 // AliExpress 1.54" 240x240 display
 //int const ysize = 240, xsize = 240, yoff = 80, xoff = 0, invert = 1, rotate = 5;
@@ -156,7 +151,7 @@ int const RASET = 0x2B; // Define row address
 int const RAMWR = 0x2C; // Write to display RAM
 
 // Globals - current plot position and colours
-int x0, y0;
+int xorigin, yorigin;
 int fore = 0xFFFF; // White
 int back = 0;      // Black
 int scale = 1;     // Text scale
@@ -222,7 +217,7 @@ unsigned int Colour (int r, int g, int b) {
 
 // Move current plot position to x,y
 void MoveTo (int x, int y) {
-  x0 = x; y0 = y;
+  xorigin = x; yorigin = y;
 }
 
 // Plot point at x,y
@@ -235,23 +230,23 @@ void PlotPoint (int x, int y) {
 // Draw a line to x,y
 void DrawTo (int x, int y) {
   int sx, sy, e2, err;
-  int dx = abs(x - x0);
-  int dy = abs(y - y0);
-  if (x0 < x) sx = 1; else sx = -1;
-  if (y0 < y) sy = 1; else sy = -1;
+  int dx = abs(x - xorigin);
+  int dy = abs(y - yorigin);
+  if (xorigin < x) sx = 1; else sx = -1;
+  if (yorigin < y) sy = 1; else sy = -1;
   err = dx - dy;
   for (;;) {
-    PlotPoint(x0, y0);
-    if (x0==x && y0==y) return;
+    PlotPoint(xorigin, yorigin);
+    if (xorigin==x && yorigin==y) return;
     e2 = err<<1;
-    if (e2 > -dy) { err = err - dy; x0 = x0 + sx; }
-    if (e2 < dx) { err = err + dx; y0 = y0 + sy; }
+    if (e2 > -dy) { err = err - dy; xorigin = xorigin + sx; }
+    if (e2 < dx) { err = err + dx; yorigin = yorigin + sy; }
   }
 }
 
 void FillRect (int w, int h) {
-  Command2(CASET, y0+yoff, y0+yoff+h-1);
-  Command2(RASET, x0+xoff, x0+xoff+w-1);
+  Command2(CASET, yorigin+yoff, yorigin+yoff+h-1);
+  Command2(RASET, xorigin+xoff, xorigin+xoff+w-1);
   Command(RAMWR);
   for (int p=0; p<w*h*2; p++) {
     Data(fore>>8); Data(fore & 0xff);
@@ -261,8 +256,8 @@ void FillRect (int w, int h) {
 // Plot an ASCII character with bottom left corner at x,y
 void PlotChar (char c) {
   int colour;
-  Command2(CASET, yoff+y0, yoff+y0+8*scale-1);
-  Command2(RASET, xoff+x0, xoff+x0+6*scale-1);
+  Command2(CASET, yoff+yorigin, yoff+yorigin+8*scale-1);
+  Command2(RASET, xoff+xorigin, xoff+xorigin+6*scale-1);
   Command(RAMWR);
   for (int xx=0; xx<6; xx++) {
     int bits = pgm_read_byte(&CharMap[c-32][xx]);
@@ -275,7 +270,7 @@ void PlotChar (char c) {
       }
     }
   }
-  x0 = x0 + 6*scale;
+  xorigin = xorigin + 6*scale;
 }
 
 // Plot text starting at the current plot position
