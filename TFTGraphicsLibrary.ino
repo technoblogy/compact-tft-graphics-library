@@ -1,6 +1,6 @@
-/* Compact TFT Graphics Library v3 - see http://www.technoblogy.com/show?2LMJ
+/* Compact TFT Graphics Library v4 - see http://www.technoblogy.com/show?2LMJ
 
-   David Johnson-Davies - www.technoblogy.com - 24th July 2021
+   David Johnson-Davies - www.technoblogy.com - 9th May 2022
    
    CC BY 4.0
    Licensed under a Creative Commons Attribution 4.0 International license: 
@@ -9,40 +9,59 @@
 
 #include <SPI.h>
 
-int const cs = 6; // TFT display SPI chip select pin
-int const dc = 7; // TFT display data/command select pin
+// Arduino pin numbers. Change these for your display connections
+int const cs = 0; // TFT display SPI chip select pin
+int const dc = 1; // TFT display data/command select pin
 
 // Display parameters - uncomment the line for the one you want to use
 
 // Adafruit 1.44" 128x128 display
-int const ysize = 128, xsize = 128, yoff = 3, xoff = 2, invert = 0, rotate = 5;
+// int const xsize = 128, ysize = 128, xoff = 2, yoff = 1, invert = 0, rotate = 3, bgr = 1;
+
+// AliExpress 1.44" 128x128 display
+// int const xsize = 128, ysize = 128, xoff = 2, yoff = 1, invert = 0, rotate = 3, bgr = 1;
 
 // Adafruit 0.96" 160x80 display
-//int const ysize = 80, xsize = 160, yoff = 24, xoff = 0, invert = 0, rotate = 0;
+// int const xsize = 160, ysize = 80, xoff = 0, yoff = 24, invert = 0, rotate = 6, bgr = 1;
 
 // AliExpress 0.96" 160x80 display
-//int const ysize = 80, xsize = 160, yoff = 26, xoff = 1, invert = 1, rotate = 0;
+// int const xsize = 160, ysize = 80, xoff = 1, yoff = 26, invert = 1, rotate = 0, bgr = 1;
 
 // Adafruit 1.8" 160x128 display
-//int const ysize = 128, xsize = 160, yoff = 0, xoff = 0, invert = 0, rotate = 0;
+// int const xsize = 160, ysize = 128, xoff = 0, yoff = 0, invert = 0, rotate = 0, bgr = 1;
 
-// AliExpress 1.8" 160x128 display
-//int const ysize = 128, xsize = 160, yoff = 0, xoff = 0, invert = 0, rotate = 0;
+// AliExpress 1.8" 160x128 display (red PCB)
+// int const xsize = 160, ysize = 128, xoff = 0, yoff = 0, invert = 0, rotate = 0, bgr = 1;
+
+// AliExpress 1.8" 160x128 display (blue PCB)
+// int const xsize = 160, ysize = 128, xoff = 0, yoff = 0, invert = 0, rotate = 6, bgr = 0;
 
 // Adafruit 1.14" 240x135 display
-//int const ysize = 135, xsize = 240, yoff = 53, xoff = 40, invert = 1, rotate = 6;
+// int const xsize = 240, ysize = 135, xoff = 40, yoff = 53, invert = 1, rotate = 6, bgr = 0;
 
 // AliExpress 1.14" 240x135 display
-//int const ysize = 135, xsize = 240, yoff = 52, xoff = 40, invert = 1, rotate = 0;
+// int const xsize = 240, ysize = 135, xoff = 40, yoff = 52, invert = 1, rotate = 0, bgr = 0;
 
-// Adafruit 1.54" 240x240 display and Adafruit 1.3" 240x240 display
-//int const ysize = 240, xsize = 240, yoff = 0, xoff = 0, invert = 1, rotate = 3;
+// Adafruit 1.3" 240x240 display
+// int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
+
+// Adafruit 1.54" 240x240 display
+// int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
 
 // AliExpress 1.54" 240x240 display
-//int const ysize = 240, xsize = 240, yoff = 80, xoff = 0, invert = 1, rotate = 5;
+int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
+
+// Adafruit 1.9" 320x170 display
+// int const xsize = 320, ysize = 170, xoff = 0, yoff = 35, invert = 1, rotate = 0, bgr = 0;
 
 // Adafruit 2.0" 320x240 display
-//int const ysize = 240, xsize = 320, yoff = 0, xoff = 0, invert = 1, rotate = 6;
+// int const xsize = 320, ysize = 240, xoff = 0, yoff = 0, invert = 1, rotate = 6, bgr = 0;
+
+// Adafruit 2.2" 320x240 display
+// int const xsize = 320, ysize = 240, xoff = 0, yoff = 0, invert = 0, rotate = 4, bgr = 1;
+
+// AliExpress 2.4" 320x240 display
+// int const xsize = 320, ysize = 240, xoff = 0, yoff = 0, invert = 0, rotate = 2, bgr = 1;
 
 // Character set for text - stored in program memory
 const uint8_t CharMap[96][6] PROGMEM = {
@@ -151,7 +170,7 @@ int const RASET = 0x2B; // Define row address
 int const RAMWR = 0x2C; // Write to display RAM
 
 // Globals - current plot position and colours
-int xorigin, yorigin;
+int xpos, ypos;
 int fore = 0xFFFF; // White
 int back = 0;      // Black
 int scale = 1;     // Text scale
@@ -185,17 +204,17 @@ void InitDisplay () {
   digitalWrite(dc, HIGH);                  // Data
   SPI.begin();
   Command(0x01);                           // Software reset
-  delay(150);                              // delay 150 ms
-  Command(0x11);                           // Out of sleep mode
-  delay(500);                              // delay 500 ms
+  delay(250);                              // delay 250 ms
+  Command(0x36); Data(rotate<<5 | bgr<<3); // Set orientation and rgb/bgr
   Command(0x3A); Data(0x55);               // Set color mode - 16-bit color
   Command(0x20+invert);                    // Invert
-  Command(0x36); Data(rotate<<5);          // Set orientation
+  Command(0x11);                           // Out of sleep mode
+  delay(150);
 }
 
 void DisplayOn () {
   Command(0x29);                           // Display on
-  delay(10);
+  delay(150);
 }
 
 void ClearDisplay () {
@@ -204,7 +223,7 @@ void ClearDisplay () {
   Command(0x3A); Data(0x03);               // 12-bit colour
   Command(RAMWR);
   for (int i=0; i<xsize/2; i++) {
-    for (int j=0; j<ysize * 3; j++) {
+    for (int j=0; j<ysize*3; j++) {
       Data(0);
     }
   }
@@ -217,7 +236,7 @@ unsigned int Colour (int r, int g, int b) {
 
 // Move current plot position to x,y
 void MoveTo (int x, int y) {
-  xorigin = x; yorigin = y;
+  xpos = x; ypos = y;
 }
 
 // Plot point at x,y
@@ -230,34 +249,36 @@ void PlotPoint (int x, int y) {
 // Draw a line to x,y
 void DrawTo (int x, int y) {
   int sx, sy, e2, err;
-  int dx = abs(x - xorigin);
-  int dy = abs(y - yorigin);
-  if (xorigin < x) sx = 1; else sx = -1;
-  if (yorigin < y) sy = 1; else sy = -1;
+  int dx = abs(x - xpos);
+  int dy = abs(y - ypos);
+  if (xpos < x) sx = 1; else sx = -1;
+  if (ypos < y) sy = 1; else sy = -1;
   err = dx - dy;
   for (;;) {
-    PlotPoint(xorigin, yorigin);
-    if (xorigin==x && yorigin==y) return;
+    PlotPoint(xpos, ypos);
+    if (xpos==x && ypos==y) return;
     e2 = err<<1;
-    if (e2 > -dy) { err = err - dy; xorigin = xorigin + sx; }
-    if (e2 < dx) { err = err + dx; yorigin = yorigin + sy; }
+    if (e2 > -dy) { err = err - dy; xpos = xpos + sx; }
+    if (e2 < dx) { err = err + dx; ypos = ypos + sy; }
   }
 }
 
 void FillRect (int w, int h) {
-  Command2(CASET, yorigin+yoff, yorigin+yoff+h-1);
-  Command2(RASET, xorigin+xoff, xorigin+xoff+w-1);
+  Command2(CASET, ypos+yoff, ypos+yoff+h-1);
+  Command2(RASET, xpos+xoff, xpos+xoff+w-1);
   Command(RAMWR);
-  for (int p=0; p<w*h*2; p++) {
-    Data(fore>>8); Data(fore & 0xff);
+  for (int i=0; i<w; i++) {
+    for (int j=0; j<h; j++) {
+      Data(fore>>8); Data(fore & 0xff);
+    }
   }
 }
 
 // Plot an ASCII character with bottom left corner at x,y
 void PlotChar (char c) {
   int colour;
-  Command2(CASET, yoff+yorigin, yoff+yorigin+8*scale-1);
-  Command2(RASET, xoff+xorigin, xoff+xorigin+6*scale-1);
+  Command2(CASET, yoff+ypos, yoff+ypos+8*scale-1);
+  Command2(RASET, xoff+xpos, xoff+xpos+6*scale-1);
   Command(RAMWR);
   for (int xx=0; xx<6; xx++) {
     int bits = pgm_read_byte(&CharMap[c-32][xx]);
@@ -270,7 +291,7 @@ void PlotChar (char c) {
       }
     }
   }
-  xorigin = xorigin + 6*scale;
+  xpos = xpos + 6*scale;
 }
 
 // Plot text starting at the current plot position
@@ -282,12 +303,56 @@ void PlotText(PGM_P p) {
   }
 }
 
+void PlotInt(int n) {
+  bool lead = false;
+  for (int d=10000; d>0; d = d/10) {
+    char j = (n/d) % 10;
+    if (j!=0 || lead || d==1) { PlotChar(j + '0'); lead = true; }
+  }
+}
+
 void TestChart () {
   MoveTo(0,0);
   DrawTo(xsize-1, 0); DrawTo(xsize-1, ysize-1);
   DrawTo(0, ysize-1); DrawTo(0, 0);
-  scale=8;
+  scale = 8;
   MoveTo((xsize-40)/2, (ysize-64)/2); PlotChar('F');
+  scale = 1;
+}
+
+// Demos **********************************************
+
+void BarChart () {
+  int x1 = 15, y1 = 11;                    // Origin
+  MoveTo((xsize-x1-90)/2+x1, ysize-8); PlotText(PSTR("Sensor Readings"));
+  // Horizontal axis
+  int xinc = (xsize-x1)/20;
+  MoveTo(x1, y1); DrawTo(xsize-1, y1);
+  for (int i=0; i<=20; i=i+4) {
+    int mark = x1+i*xinc;
+    MoveTo(mark, y1); DrawTo(mark, y1-2);
+    // Draw histogram
+    if (i != 20) {
+      int bar = xinc*4/3;
+      fore = 0x001F;
+      for (int b=2; b>=0; b--) {
+        MoveTo(mark+bar*b-b+1,y1+1); FillRect(bar, 5+random(ysize-y1-20));
+        fore = fore<<6;
+      }
+      fore = 0xFFFF;
+    }
+    if (i > 9) MoveTo(mark-7, y1-11); else MoveTo(mark-3, y1-11);
+    PlotInt(i);
+  }
+  // Vertical axis
+  int yinc = (ysize-y1)/20;
+  MoveTo(x1, y1); DrawTo(x1, ysize-1);
+  for (int i=0; i<=20; i=i+5) {
+    int mark = y1+i*yinc;
+    MoveTo(x1, mark); DrawTo(x1-2, mark);
+    if (i > 9) MoveTo(x1-15, mark-4); else MoveTo(x1-9, mark-4);
+    PlotInt(i);
+  }
 }
 
 // Setup **********************************************
@@ -300,41 +365,6 @@ void setup() {
 }
 
 void loop () {
-  // Plot bar chart
-  int x1 = 15, y1 = 11;                    // Origin
-  MoveTo((xsize-x1-90)/2+x1, ysize-8); PlotText(PSTR("Sensor Readings"));
-  // Horizontal axis
-  int xinc = (xsize-x1)/20;
-  MoveTo(x1, y1); DrawTo(xsize-1, y1);
-  for (int i=0; i<=20; i=i+4) {
-    int mark = x1+i*xinc;
-    MoveTo(mark, y1); DrawTo(mark, y1-2);
-    // Draw histogram
-    if (i != 20) {
-      int bar = xinc*4/3;
-      fore = Colour(0, 0, 255);
-      MoveTo(mark+bar*2-1,y1+1); FillRect(bar, 5+random(ysize-y1-20));
-      fore = Colour(0, 255, 0);
-      MoveTo(mark+bar,y1+1); FillRect(bar, 5+random(ysize-y1-20));
-      fore = Colour(255, 0, 0);
-      MoveTo(mark+1,y1+1); FillRect(bar, 5+random(ysize-y1-20));
-      fore = 0xFFFF;
-    }
-    int tens = i/10;
-    if (tens != 0) {
-      MoveTo(mark-7, y1-11); PlotChar(tens+'0');
-      MoveTo(mark-1, y1-11); PlotChar(i%10+'0');
-    } else { MoveTo(mark-3, y1-11); PlotChar(i%10+'0'); }
-  }
-  // Vertical axis
-  int yinc = (ysize-y1)/20;
-  MoveTo(x1, y1); DrawTo(x1, ysize-1);
-  for (int i=0; i<=20; i=i+5) {
-    int mark = y1+i*yinc;
-    MoveTo(x1, mark); DrawTo(x1-2, mark);
-    int tens = i/10;
-    if (tens != 0) { MoveTo(x1-15, mark-4); PlotChar(tens+'0'); }
-    MoveTo(x1-9, mark-4); PlotChar(i%10+'0');
-  }
+  BarChart();
   for (;;);
 }
