@@ -1,6 +1,6 @@
-/* Compact TFT Graphics Library v4 - see http://www.technoblogy.com/show?2LMJ
+/* Compact TFT Graphics Library v5 - see http://www.technoblogy.com/show?2LMJ
 
-   David Johnson-Davies - www.technoblogy.com - 9th May 2022
+   David Johnson-Davies - www.technoblogy.com - 17th March 2026
    
    CC BY 4.0
    Licensed under a Creative Commons Attribution 4.0 International license: 
@@ -49,7 +49,7 @@ int const dc = 1; // TFT display data/command select pin
 // int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
 
 // AliExpress 1.54" 240x240 display
-int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
+// int const xsize = 240, ysize = 240, xoff = 0, yoff = 80, invert = 1, rotate = 5, bgr = 0;
 
 // Adafruit 1.9" 320x170 display
 // int const xsize = 320, ysize = 170, xoff = 0, yoff = 35, invert = 1, rotate = 0, bgr = 0;
@@ -222,11 +222,13 @@ void ClearDisplay () {
   Command2(RASET, xoff, xoff + xsize - 1);
   Command(0x3A); Data(0x03);               // 12-bit colour
   Command(RAMWR);
+  digitalWrite(cs, LOW);
   for (int i=0; i<xsize/2; i++) {
     for (int j=0; j<ysize*3; j++) {
-      Data(0);
+      SPI.transfer(0);                     // 3 x faster
     }
   }
+  digitalWrite(cs, HIGH);
   Command(0x3A); Data(0x05);               // Back to 16-bit colour
 }
 
